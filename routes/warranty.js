@@ -2,29 +2,43 @@ const express  = require('express');
 const router   = express.Router();
 const supabase = require('../lib/supabase');
 
-router.get('/:serial', async (req, res) => {
+router.get('/:serial', async (req, res, next) => {
   try {
     const serial = req.params.serial.trim().toUpperCase();
-    console.log('Serial received:', serial);
 
-    // Test basic connection first
+    if (!/^ABR-[A-Z0-9]{2,10}$/.test(serial)) {
+      return res.status(400).json({
+        error: 'Invalid serial number format. Expected format: ABR-XXXXX',
+      });
+    }
+
     const { data, error } = await supabase
       .from('warranties')
       .select('*')
-      .limit(5);
+      .eq('serial_number', serial)
+      .single();
 
-    console.log('All warranties:', JSON.stringify(data));
-    console.log('Error:', JSON.stringify(error));
+    if (error || !data) {
+      return res.json({ found: false });
+    }
 
-    return res.json({ 
-      serial,
-      data, 
-      error: error?.message 
+    const now        = new Date();
+    const expiryDate = new Date(data.expiry_date);
+    const isActive   = expiryDate > now && data.status === 'Active';
+
+    return res.json({
+      found:        true,
+      status:       isActive ? 'Active' : 'Expired',
+      product:      data.product_name,
+      model:        data.model_number,
+      customer:     data.customer_name,
+      purchaseDate: new Date(data.purchase_date).toLocaleDateString('en-IN', { month: 'long', year: 'numeric' }),
+      expiry:       new Date(data.expiry_date).toLocaleDateString('en-IN', { month: 'long', year: 'numeric' }),
+      supportEmail: 'support@abrcomputers.in',
     });
 
   } catch (err) {
-    console.error('Catch error:', err.message);
-    return res.json({ caught: err.message });
+    next(err);
   }
 });
 
