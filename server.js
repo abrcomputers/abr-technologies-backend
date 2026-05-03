@@ -10,45 +10,42 @@ const productsRoutes = require('./routes/products');
 
 const app  = express();
 const PORT = process.env.PORT || 3000;
+
+// Trust Railway's proxy
 app.set('trust proxy', 1);
 
-// ── Security middleware ───────────────────────────────────────────────────────
+// Security middleware
 app.use(helmet());
 app.use(cors({
-  origin: [
-    process.env.FRONTEND_URL,
-    'http://localhost:5500',   // local dev (Live Server)
-    'http://127.0.0.1:5500',
-  ],
+  origin: '*',
   methods: ['GET', 'POST'],
   allowedHeaders: ['Content-Type'],
 }));
 app.use(express.json({ limit: '10kb' }));
 
-// ── Rate limiting ─────────────────────────────────────────────────────────────
+// Rate limiting
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100,                  // max 100 requests per window per IP
+  windowMs: 15 * 60 * 1000,
+  max: 100,
   standardHeaders: true,
   legacyHeaders: false,
-  message: { error: 'Too many requests. Please try again later.' },
+  validate: { xForwardedForHeader: false },
 });
 
-// Stricter limit for contact form (prevent spam)
 const contactLimiter = rateLimit({
-  windowMs: 60 * 60 * 1000, // 1 hour
-  max: 5,                    // max 5 form submissions per hour per IP
-  message: { error: 'Too many form submissions. Please wait before trying again.' },
+  windowMs: 60 * 60 * 1000,
+  max: 5,
+  validate: { xForwardedForHeader: false },
 });
 
 app.use(limiter);
 
-// ── Routes ────────────────────────────────────────────────────────────────────
+// Routes
 app.use('/api/warranty', warrantyRoutes);
 app.use('/api/contact',  contactLimiter, contactRoutes);
 app.use('/api/products', productsRoutes);
 
-// ── Health check ──────────────────────────────────────────────────────────────
+// Health check
 app.get('/api/health', (req, res) => {
   res.json({
     status: 'ok',
@@ -57,18 +54,17 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// ── 404 handler ───────────────────────────────────────────────────────────────
+// 404 handler
 app.use((req, res) => {
   res.status(404).json({ error: 'Route not found' });
 });
 
-// ── Error handler ─────────────────────────────────────────────────────────────
+// Error handler
 app.use((err, req, res, next) => {
   console.error('Server error:', err.message);
   res.status(500).json({ error: 'Something went wrong. Please try again.' });
 });
 
-// ── Start ─────────────────────────────────────────────────────────────────────
 app.listen(PORT, () => {
   console.log(`✅ ABR Technologies API running on port ${PORT}`);
   console.log(`   Environment: ${process.env.NODE_ENV}`);
