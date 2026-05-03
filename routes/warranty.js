@@ -32,8 +32,8 @@ router.get('/:serial', async (req, res, next) => {
       product:      data.product_name,
       model:        data.model_number,
       customer:     data.customer_name,
-      purchaseDate: new Date(data.purchase_date).toLocaleDateString('en-IN', { month: 'long', year: 'numeric' }),
-      expiry:       new Date(data.expiry_date).toLocaleDateString('en-IN', { month: 'long', year: 'numeric' }),
+      purchaseDate: new Date(data.purchase_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' }),
+expiry:       new Date(data.expiry_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' }),
       supportEmail: 'support@abrcomputers.in',
     });
 
