@@ -24,7 +24,7 @@ router.get('/:serial', async (req, res, next) => {
 
     const now        = new Date();
     const expiryDate = new Date(data.expiry_date);
-    const isActive   = expiryDate > now && data.status === 'Active';
+    const isActive = expiryDate > now;
 
     return res.json({
       found:        true,
